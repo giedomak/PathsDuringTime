@@ -108,7 +108,7 @@ public class Neo4jThings {
     private void openConnectionToNeo4j(){
         neo4j = new GraphDatabaseFactory().newEmbeddedDatabase(DB_PATH);
         int MAX_DEPTH = 15;
-        finder = GraphAlgoFactory.shortestPath(
+        finder = GraphAlgoFactory.allSimplePaths(
                 PathExpanders.forTypeAndDirection(relationshipType, Direction.OUTGOING), MAX_DEPTH);
     }
 
