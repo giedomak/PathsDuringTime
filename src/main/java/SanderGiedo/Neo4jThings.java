@@ -4,6 +4,7 @@ import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
@@ -45,14 +46,18 @@ public class Neo4jThings {
         int count = 0;
         GlobalGraphOperations ggo = GlobalGraphOperations.at(neo4j);
         try (Transaction tx = neo4j.beginTx()) {
+            double totalNodes = IteratorUtil.count(ggo.getAllNodes());
             long startTime = System.nanoTime();
             for (Node startNode : ggo.getAllNodes()) {
+                count++;
                 for (Node endNode : ggo.getAllNodes()) {
                     if (startNode.getId() == endNode.getId()) {
                         continue;
                     }
-                    count++;
                     findValidPathBetweenNodes(startNode, endNode);
+                    if(count % 100 == 0){
+                        System.out.print("\r Progress: " + count/totalNodes + "%");
+                    }
                 }
             }
             long endTime = System.nanoTime();
