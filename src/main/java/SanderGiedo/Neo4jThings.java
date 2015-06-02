@@ -55,7 +55,7 @@ public class Neo4jThings {
                         continue;
                     }
                     findValidPathBetweenNodes(startNode, endNode);
-                    if(count % 100 == 0){
+                    if(count % 100 == 1){
                         System.out.print("\r Progress: " + count/totalNodes + "%");
                     }
                 }
