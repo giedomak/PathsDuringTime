@@ -30,7 +30,7 @@ public class Neo4jThings {
     public static void main(String[] args) throws IOException {
         Neo4jThings neo4jThings = new Neo4jThings();
 
-        //neo4jThings.loadFromFile();
+        neo4jThings.loadFromFile();
 
         neo4jThings.openConnectionToNeo4j();
         neo4jThings.findAllValidPathsBetweenEverything();
@@ -62,7 +62,7 @@ public class Neo4jThings {
             }
             long endTime = System.nanoTime();
             long totalTime = (endTime - startTime);
-            System.out.println("Total time(ms): " + totalTime / 1000000 + " Average time per(ms):" + (totalTime / count) / 1000000);
+            System.out.println("Total time(ms): " + totalTime / 1000000 + " Average time per(ms):" + (totalTime / (count+1)) / 1000000);
         }
     }
 
