@@ -14,7 +14,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Neo4jThings {
@@ -30,10 +32,11 @@ public class Neo4jThings {
     public static void main(String[] args) throws IOException {
         Neo4jThings neo4jThings = new Neo4jThings();
 
-        neo4jThings.loadFromFile();
+//        neo4jThings.loadFromFile();
 
         neo4jThings.openConnectionToNeo4j();
-        neo4jThings.findAllValidPathsBetweenEverything();
+//        neo4jThings.findAllValidPathsBetweenEverything();
+        neo4jThings.findPathBetweenRandomNodes();
     }
 
     public Neo4jThings() throws IOException {
@@ -42,13 +45,39 @@ public class Neo4jThings {
         relationshipType = DynamicRelationshipType.withName("edgeTo");
     }
 
+    public void findPathBetweenRandomNodes() {
+        int count = 0;
+//        GlobalGraphOperations ggo = GlobalGraphOperations.at(neo4j);
+//        double totalNodes = IteratorUtil.count(ggo.getAllNodes());
+        try ( Transaction ignored = neo4j.beginTx();
+              Result result = neo4j.execute("match (s) where id(s) = 7 OR id(s) = 2 return s;"); ) {
+            ArrayList<Node> tworandomnodes = new ArrayList<Node>();
+            while ( result.hasNext() )
+            {
+                Map<String, Object> row = result.next();
+                tworandomnodes.add((Node) row.get("s"));
+            }
+            result.close();
+
+            long startTime = System.nanoTime();
+            findValidPathBetweenNodes(tworandomnodes.get(0), tworandomnodes.get(1));
+
+            long endTime = System.nanoTime();
+            long totalTime = (endTime - startTime);
+//            System.out.println("Total time(ms): " + totalTime / 1000000 + " Average time per(ms):" + (totalTime / (count+1)) / 1000000);
+        }
+    }
+
     public void findAllValidPathsBetweenEverything() {
+        System.out.println("findAllValidPathsBetweenEverything()");
+
         int count = 0;
         GlobalGraphOperations ggo = GlobalGraphOperations.at(neo4j);
         try (Transaction tx = neo4j.beginTx()) {
             double totalNodes = IteratorUtil.count(ggo.getAllNodes());
             long startTime = System.nanoTime();
             for (Node startNode : ggo.getAllNodes()) {
+                System.out.println(startNode);
                 count++;
                 for (Node endNode : ggo.getAllNodes()) {
                     if (startNode.getId() == endNode.getId()) {
@@ -64,23 +93,30 @@ public class Neo4jThings {
             long totalTime = (endTime - startTime);
             System.out.println("Total time(ms): " + totalTime / 1000000 + " Average time per(ms):" + (totalTime / (count+1)) / 1000000);
         }
+        System.out.println("findAllValidPathsBetweenEverything() finished");
+
     }
 
     public boolean findValidPathBetweenNodes(Node startNode, Node endNode){
-            Iterable<Path> paths = finder.findAllPaths(startNode, endNode);
-            int intervalStart = Integer.MIN_VALUE;
-            int intervalEnd = Integer.MAX_VALUE;
-            for (Path path : paths) {
-                for (Relationship relationship : path.relationships()) {
-                    int edgeStart = (Integer) relationship.getProperty("Start");
-                    int edgeEnd = (Integer) relationship.getProperty("End");
-                    intervalStart = Math.max(intervalStart, edgeStart);
-                    intervalEnd = Math.min(intervalEnd, edgeEnd);
-                }
-                if (intervalEnd >= intervalStart) {
-                    return true;
-                }
+
+        System.out.println("findValidPathBetweenNodes()" + startNode + ", " + endNode);
+        Iterable<Path> paths = finder.findAllPaths(startNode, endNode); // Out of memory
+        int intervalStart = Integer.MIN_VALUE;
+        int intervalEnd = Integer.MAX_VALUE;
+        System.out.println("paths size: " + IteratorUtil.count(paths));
+        for (Path path : paths) {
+            for (Relationship relationship : path.relationships()) {
+                int edgeStart = (Integer) relationship.getProperty("Start");
+                int edgeEnd = (Integer) relationship.getProperty("End");
+                intervalStart = Math.max(intervalStart, edgeStart);
+                intervalEnd = Math.min(intervalEnd, edgeEnd);
             }
+            if (intervalEnd >= intervalStart) {
+                System.out.println("findValidPathBetweenNodes() finished true");
+                return true;
+            }
+        }
+        System.out.println("findValidPathBetweenNodes() finished false");
         return false;
     }
 
@@ -106,13 +142,16 @@ public class Neo4jThings {
     }
 
     private void openConnectionToNeo4j(){
+        System.out.println("openConnectionToNeo4j()");
         neo4j = new GraphDatabaseFactory().newEmbeddedDatabase(DB_PATH);
         int MAX_DEPTH = 15;
         finder = GraphAlgoFactory.allSimplePaths(
                 PathExpanders.forTypeAndDirection(relationshipType, Direction.OUTGOING), MAX_DEPTH);
+        System.out.println("openConnectionToNeo4j() finished");
     }
 
     public void loadFromFile() throws IOException {
+        System.out.println("loadFromFile()");
         File deleteGraph = new File(DB_PATH);
         FileUtils.deleteRecursively(deleteGraph);
         neo4jInserter = BatchInserters.inserter(DB_PATH);
@@ -126,6 +165,7 @@ public class Neo4jThings {
         }
         bufferedReader.close();
         neo4jInserter.shutdown();
+        System.out.println("loadFromFile() finished");
     }
 
     private void insert(String[] splitLine){
