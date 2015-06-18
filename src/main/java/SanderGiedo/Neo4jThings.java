@@ -34,6 +34,11 @@ public class Neo4jThings {
         neo4jThings.openConnectionToNeo4j();
 //        neo4jThings.findAllValidPathsBetweenEverything();
         neo4jThings.findPathBetweenRandomNodes();
+        neo4jThings.shutdown();
+    }
+
+    private void shutdown() {
+        neo4j.shutdown();
     }
 
     public Neo4jThings() throws IOException {
@@ -52,10 +57,13 @@ public class Neo4jThings {
         for (int i = 0; i < 150; i++) {
             count++;
             try {
-                findValidPathBetweenNodes(Math.round(Math.random() * 50000), Math.round(Math.random() * 50000));
-                found++;
+                if (findValidPathBetweenNodes(Math.round(Math.random() * 50000), Math.round(Math.random() * 50000))) {
+                    found++;
+                }
             } catch(Exception e) {
                 System.out.println(e);
+                count--;
+                i--;
             }
         }
 
@@ -125,7 +133,11 @@ public class Neo4jThings {
 //            System.out.println("Node1: " + node1 + ", Node2: " + node2);
             Path path = finder.findSinglePath(node1, node2);
 //            System.out.println("Paths found!");
-            return true;
+            if(path == null) {
+                return false;
+            } else {
+                return true;
+            }
 //            int intervalStart = Integer.MIN_VALUE;
 //            int intervalEnd = Integer.MAX_VALUE;
 //            System.out.println("Going to iterate");
@@ -153,7 +165,7 @@ public class Neo4jThings {
     private void openConnectionToNeo4j(){
         System.out.println("openConnectionToNeo4j()");
         neo4j = new GraphDatabaseFactory().newEmbeddedDatabase(DB_PATH);
-        int MAX_DEPTH = 20;
+        int MAX_DEPTH = 15;
         finder = GraphAlgoFactory.allSimplePaths(
                 PathExpanders.allTypesAndDirections(), MAX_DEPTH);
         System.out.println("openConnectionToNeo4j() finished");
