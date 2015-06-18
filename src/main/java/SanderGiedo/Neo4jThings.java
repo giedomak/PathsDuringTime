@@ -14,10 +14,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Neo4jThings {
     GraphDatabaseService neo4j;
@@ -49,23 +46,21 @@ public class Neo4jThings {
         int count = 0;
 //        GlobalGraphOperations ggo = GlobalGraphOperations.at(neo4j);
 //        double totalNodes = IteratorUtil.count(ggo.getAllNodes());
-        try ( Transaction ignored = neo4j.beginTx();
-              Result result = neo4j.execute("match (s) where id(s) = 7 OR id(s) = 2 return s;"); ) {
-            ArrayList<Node> tworandomnodes = new ArrayList<Node>();
-            while ( result.hasNext() )
-            {
-                Map<String, Object> row = result.next();
-                tworandomnodes.add((Node) row.get("s"));
+
+        long startTime = System.nanoTime();
+        for (int i = 0; i < 150; i++) {
+            count++;
+            try {
+                findValidPathBetweenNodes(Math.round(Math.random() * 50000), Math.round(Math.random() * 50000));
+            } catch(Exception e) {
+                System.out.println(e);
             }
-            result.close();
-
-            long startTime = System.nanoTime();
-            findValidPathBetweenNodes(tworandomnodes.get(0), tworandomnodes.get(1));
-
-            long endTime = System.nanoTime();
-            long totalTime = (endTime - startTime);
-//            System.out.println("Total time(ms): " + totalTime / 1000000 + " Average time per(ms):" + (totalTime / (count+1)) / 1000000);
         }
+
+        long endTime = System.nanoTime();
+        long totalTime = (endTime - startTime);
+        System.out.println("Total time(ms): " + totalTime / 1000000 + " Average time per path(ms):" + (totalTime / (count+1)) / 1000000);
+
     }
 
     public void findAllValidPathsBetweenEverything() {
@@ -123,21 +118,36 @@ public class Neo4jThings {
 
     public boolean findValidPathBetweenNodes(long startNodeId, long endNodeId){
         try(Transaction tx = neo4j.beginTx()) {
-            Iterable<Path> paths = finder.findAllPaths(neo4j.getNodeById(startNodeId), neo4j.getNodeById(endNodeId));
-            int intervalStart = Integer.MIN_VALUE;
-            int intervalEnd = Integer.MAX_VALUE;
-            for (Path path : paths) {
-                for (Relationship relationship : path.relationships()) {
-                    int edgeStart = (Integer) relationship.getProperty("Start");
-                    int edgeEnd = (Integer) relationship.getProperty("End");
-                    intervalStart = Math.max(intervalStart, edgeStart);
-                    intervalEnd = Math.min(intervalEnd, edgeEnd);
-                }
-                if (intervalEnd >= intervalStart) {
-                    return true;
-                }
+            Node node1 = neo4j.getNodeById(startNodeId);
+            Node node2 = neo4j.getNodeById(endNodeId);
+            System.out.println("Node1: " + node1 + ", Node2: " + node2);
+            Path path = finder.findSinglePath(node1, node2);
+            System.out.println("Paths found!");
+            if(path.length() > 0) {
+                return true;
+
             }
+//            int intervalStart = Integer.MIN_VALUE;
+//            int intervalEnd = Integer.MAX_VALUE;
+//            System.out.println("Going to iterate");
+//            for ( Iterator<Path> it = paths.iterator(); it.hasNext(); ) {
+//                Path path = it.next();
+//                System.out.println("interating path: " + path);
+//                Iterable<Relationship> relationships = path.relationships();
+//                System.out.println("Relationships found!");
+//                for (Relationship relationship : relationships) {
+//                    int edgeStart = (Integer) relationship.getProperty("Start");
+//                    int edgeEnd = (Integer) relationship.getProperty("End");
+//                    intervalStart = Math.max(intervalStart, edgeStart);
+//                    intervalEnd = Math.min(intervalEnd, edgeEnd);
+//                }
+//                if (intervalEnd >= intervalStart) {
+//                    System.out.println("findValidPathBetweenNodes() finished true");
+//                    return true;
+//                }
+//            }
         }
+        System.out.println("findValidPathBetweenNodes() finished false");
         return false;
     }
 
