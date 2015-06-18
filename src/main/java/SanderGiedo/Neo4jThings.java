@@ -20,7 +20,7 @@ public class Neo4jThings {
     GraphDatabaseService neo4j;
     BatchInserter neo4jInserter;
     PathFinder<Path> finder;
-    String DB_PATH = "graph.db";
+    String DB_PATH = "/Users/giedomak/Desktop/graph.db";
     String DATA_PATH = "fb_days_version";
     Label label;
     RelationshipType relationshipType;
@@ -44,6 +44,7 @@ public class Neo4jThings {
 
     public void findPathBetweenRandomNodes() {
         int count = 0;
+        int found = 0;
 //        GlobalGraphOperations ggo = GlobalGraphOperations.at(neo4j);
 //        double totalNodes = IteratorUtil.count(ggo.getAllNodes());
 
@@ -52,6 +53,7 @@ public class Neo4jThings {
             count++;
             try {
                 findValidPathBetweenNodes(Math.round(Math.random() * 50000), Math.round(Math.random() * 50000));
+                found++;
             } catch(Exception e) {
                 System.out.println(e);
             }
@@ -59,7 +61,7 @@ public class Neo4jThings {
 
         long endTime = System.nanoTime();
         long totalTime = (endTime - startTime);
-        System.out.println("Total time(ms): " + totalTime / 1000000 + " Average time per path(ms):" + (totalTime / (count+1)) / 1000000);
+        System.out.println("Paths tried: " + count + " Paths found: " + found + " Total time(ms): " + totalTime / 1000000 + " Average time per path(ms):" + (totalTime / (count)) / 1000000);
 
     }
 
@@ -120,13 +122,10 @@ public class Neo4jThings {
         try(Transaction tx = neo4j.beginTx()) {
             Node node1 = neo4j.getNodeById(startNodeId);
             Node node2 = neo4j.getNodeById(endNodeId);
-            System.out.println("Node1: " + node1 + ", Node2: " + node2);
+//            System.out.println("Node1: " + node1 + ", Node2: " + node2);
             Path path = finder.findSinglePath(node1, node2);
-            System.out.println("Paths found!");
-            if(path.length() > 0) {
-                return true;
-
-            }
+//            System.out.println("Paths found!");
+            return true;
 //            int intervalStart = Integer.MIN_VALUE;
 //            int intervalEnd = Integer.MAX_VALUE;
 //            System.out.println("Going to iterate");
@@ -147,16 +146,16 @@ public class Neo4jThings {
 //                }
 //            }
         }
-        System.out.println("findValidPathBetweenNodes() finished false");
-        return false;
+//        System.out.println("findValidPathBetweenNodes() finished false");
+//        return false;
     }
 
     private void openConnectionToNeo4j(){
         System.out.println("openConnectionToNeo4j()");
         neo4j = new GraphDatabaseFactory().newEmbeddedDatabase(DB_PATH);
-        int MAX_DEPTH = 15;
+        int MAX_DEPTH = 20;
         finder = GraphAlgoFactory.allSimplePaths(
-                PathExpanders.forTypeAndDirection(relationshipType, Direction.OUTGOING), MAX_DEPTH);
+                PathExpanders.allTypesAndDirections(), MAX_DEPTH);
         System.out.println("openConnectionToNeo4j() finished");
     }
 
@@ -184,6 +183,9 @@ public class Neo4jThings {
         String[] interval = splitLine[2].split(",");
         int intervalStart = new Integer(interval[0]);
         int intervalEnd = new Integer(interval[1]);
+//        long startNodeId = neo4jInserter.createNode(null);
+//        long endNodeId = neo4jInserter.createNode(null);
+
         getOrCreateNode(startNodeId);
         getOrCreateNode(endNodeId);
         Map<String, Object> intervalMap = new HashMap<String, Object>();
@@ -194,7 +196,7 @@ public class Neo4jThings {
 
     private void getOrCreateNode(long id){
         if(!neo4jInserter.nodeExists(id)){
-            neo4jInserter.createNode(id, null, label);
+            neo4jInserter.createNode(id,null);
         }
     }
 }
